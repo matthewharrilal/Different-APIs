@@ -14,7 +14,9 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         let network1 = Network()
-        print(network1.networking())
+        network1.networking() {(response) in
+            print(response)
+        }
     }
 
     override func didReceiveMemoryWarning() {
@@ -72,8 +74,17 @@ struct ListingList: Decodable {
     
 }
 
+enum NetworkError: Error {
+    case unknown
+    case couldNotParseJSON
+    
+}
+enum Result<T> {
+    case success(T)
+    case failure(NetworkError)
+}
 class Network {
-    func networking() {
+    func networking(completion: @escaping(Result<[airBNB]>) -> Void) {
         enum HTTPsMethods: String {
             case get = "GET"
             
@@ -83,7 +94,11 @@ class Network {
         getRequest.httpMethod = HTTPsMethods.get.rawValue
         session.dataTask(with: getRequest) { (data, response, error) in
             if let data = data {
-                let airBNB1 = try? JSONDecoder().decode(ListingList.self, from: data)
+                let decoder1 = JSONDecoder()
+                guard  let airBNB1 = try? decoder1.decode(ListingList.self, from: data) else{
+                    return completion(Result.failure(NetworkError.couldNotParseJSON))
+                }
+               completion(Result.success(airBNB1.search_results))
                print(airBNB1)
             }
         }.resume()
